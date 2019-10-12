@@ -3,6 +3,56 @@ Tests for the respository utilities
 These have been ported by Martin Ahindura from the mtn-pay-js Typescript package
 https://github.com/sopherapps/mtn-pay-js/blob/master/src/__tests__/utils/repository.spec.ts
 """
+from unittest import TestCase
+from unittest.mock import patch
+import requests
+from momo_sdk.utils.repository import get_resources, RemoteResource
+
+
+class TestRemoteResource(TestCase):
+    """
+    Tests for the RemoteResource class
+    used to connect to remote resources via API calls
+    """
+
+    def setUp(self):
+        """Do initial set up"""
+        self.resource_names = ['books', 'tables', 'pens']
+        self.api_base_url = 'http://localhost'
+        self.common_headers = {"Authorization": 'Bearer some-token'}
+        self.specific_headers = {'X-security': 'helmet'}
+        self.mock_books = [
+            {"id": 'bib', "name": 'Bible'},
+            {"id": 'abb', "name": 'Abbort'},
+            {"id": 'tod', "name": 'Today in Science'},
+        ]
+        self.mock_resource_name = 'books'
+
+    @patch('momo_sdk.utils.repository.requests.get')
+    def test_list_many_method(self, mock_get):
+        """
+        The list_many method should get many instances
+        of the remote resource that fulfill a given set of filters or params
+        Returns the result of a call to the Axios get method at \
+          url "baseURL/resourceName"
+        """
+        params = {'hello': 'world'}
+        timeout = 0.01
+
+        remote_resource = RemoteResource(
+            self.mock_resource_name, api_base_url=self.api_base_url,
+            common_headers=self.common_headers, timeout=timeout)
+
+        remote_resource.list_many(
+            params=params, headers=self.specific_headers)
+        resource_url = "{0}/{1}".format(self.api_base_url,
+                                        self.mock_resource_name)
+
+        mock_get.assert_called_once_with(
+            resource_url, params=params, headers={
+                **self.common_headers, **self.specific_headers}, timeout=timeout)
+
+
 """
 import axios from 'axios';
 
