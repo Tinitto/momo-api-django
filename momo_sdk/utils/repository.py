@@ -14,9 +14,9 @@ def get_resources(resource_names,
     Generates a list of RemoteResource objects
     corresponding to the resource_names passed
     """
-    return [RemoteResource(
+    return {resource_name: RemoteResource(
         resource_name, api_base_url=api_base_url,
-        common_headers=common_headers) for resource_name in resource_names]
+        common_headers=common_headers) for resource_name in resource_names}
 
 
 class RemoteResource:
