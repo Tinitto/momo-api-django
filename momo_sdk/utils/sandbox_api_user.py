@@ -3,117 +3,67 @@ Module to generate credentials for the Sandbox User MOMO API
 The Logic has been ported by Martin Ahindura from the TypeScript mtn-pay-js package
 https://github.com/sopherapps/mtn-pay-js/blob/master/src/sandboxApiUser/index.ts
 """
-"""
-import { generate as uuidv4 } from 'uuidjs';
-import getResources, { IResource } from '../utils/repository';
 
-export interface ISandboxApiUserDetails {
-  apiKey: string;
-  providerCallbackHost: string;
-  targetEnvironment: string;
-  referenceId: string;
-}
+import uuid
+from .repository import RemoteResource
 
-/**
- * @class SandboxApiUser
- * @property {string} apiKey
- * @property {string} providerCallbackHost
- * @property {string} targetEnvironment
- * @property {string} referenceId
- * @async @method initialize()
- * @async @method getUser()
- */
-export default class SandboxApiUser {
-  public apiKey: string = '';
-  public providerCallbackHost: string = '';
-  public targetEnvironment: string = '';
-  public referenceId: string;
-  private apiuserResource: IResource;
-  private apikeyResource: IResource;
 
-  constructor({
-    baseURL = 'https://ericssonbasicapi2.azure-api.net/v1_0',
-    subscriptionKey,
-    providerCallbackHost = 'https://example.com',
-  }: {
-    baseURL?: string;
-    subscriptionKey: string;
-    providerCallbackHost?: string;
-  }) {
-    this.referenceId = uuidv4();
-    this.providerCallbackHost = providerCallbackHost;
+class SandboxApiUser:
+    """A class for the Sandbox api user credentials to be used during testing"""
 
-    const apiuserUrl = 'apiuser';
-    const apikeyUrl = `apiuser/${this.referenceId}/apikey`;
-    const commonHeaders = {
-      'Content-Type': 'application/json',
-      'Ocp-Apim-Subscription-Key': subscriptionKey,
-    };
-    this.apiuserResource = getResources([apiuserUrl], baseURL, commonHeaders)[apiuserUrl];
-    this.apikeyResource = getResources([apikeyUrl], baseURL, commonHeaders)[apikeyUrl];
-  }
+    def __init__(self, subscription_key, api_base_url='https://ericssonbasicapi2.azure-api.net/v1_0', provider_callback_host='https://example.com',):
+        self.reference_id = uuid.uuid4()
+        self.provider_callback_host = provider_callback_host
+        self.api_key = ''
+        self.provider_callback_host = ''
+        self.target_environment = ''
 
-  /**
-   * @public
-   * @method initialize
-   * @returns {Promise<AxiosResponse<any>>}
-   */
-  public async initialize() {
-    const headers = {
-      'X-Reference-Id': this.referenceId,
-    };
-    try {
-      return await this.apiuserResource.create({ providerCallbackHost: this.providerCallbackHost }, headers);
-    } catch (error) {
-      throw error;
-    }
-  }
+        api_user_url = 'apiuser'
+        api_key_url = "apiuser/{}/apikey".format(self.reference_id)
+        common_headers = {
+            'Content-Type': 'application/json',
+            'Ocp-Apim-Subscription-Key': subscription_key,
+        }
 
-  /**
-   * @public
-   * @method getUser
-   * @returns {Promise<ISandboxApiUserDetails>}
-   */
-  public async getUser(): Promise<ISandboxApiUserDetails> {
-    if (!this.apiKey) {
-      await this.getRemoteApiKey();
-    }
+        self.api_user_resource = RemoteResource(
+            api_user_url, api_base_url=api_base_url, common_headers=common_headers)
 
-    if (!this.targetEnvironment) {
-      await this.getRemoteUserDetails();
-    }
+        self.api_key_resource = RemoteResource(
+            api_key_url, api_base_url=api_base_url, common_headers=common_headers)
 
-    return {
-      apiKey: this.apiKey,
-      providerCallbackHost: this.providerCallbackHost,
-      referenceId: this.referenceId,
-      targetEnvironment: this.targetEnvironment,
-    };
-  }
+    def initialize(self):
+        """Creates the user"""
+        headers = {
+            'X-Reference-Id': self.reference_id,
+        }
+        return self.api_user_resource.create(
+            {"providerCallbackHost": self.provider_callback_host}, headers=headers)
 
-  /**
-   * @private
-   * getRemoteApiKey
-   * @returns {undefined}
-   */
-  private async getRemoteApiKey() {
-    const apikeyResponse = await this.apikeyResource.create({});
-    if (apikeyResponse.status === 201) {
-      this.apiKey = apikeyResponse.data.apiKey;
-    }
-  }
+    def __get_remote_api_key(self):
+        """Creates the API key"""
+        response = self.api_key_resource.create({})
+        if(response.status_code == 201):
+            self.api_key = response.json()['apiKey']
 
-  /**
-   * @private
-   * getRemoteUserDetails
-   * @returns {undefined}
-   */
-  private async getRemoteUserDetails() {
-    const apiuserResponse = await this.apiuserResource.getOne(this.referenceId);
-    if (apiuserResponse.status === 200) {
-      this.targetEnvironment = apiuserResponse.data.targetEnvironment;
-      this.providerCallbackHost = apiuserResponse.data.providerCallbackHost;
-    }
-  }
-}
-"""
+    def __get_remote_user_details(self):
+        """Returns the user's details"""
+        response = self.api_user_resource.get_one(self.reference_id)
+        if (response.status == 200):
+            data = response.json()
+            self.target_environment = data['targetEnvironment']
+            self.provider_callback_host = data['providerCallbackHost']
+
+    def get_user(self):
+        """returns the users details in a MOMO open api format"""
+        if (self.api_key is None):
+            self.__get_remote_api_key()
+
+        if (self.target_environment is None):
+            self.__get_remote_user_details()
+
+        return {
+            'apiKey': self.api_key,
+            'providerCallbackHost': self.provider_callback_host,
+            'referenceId': self.reference_id,
+            'targetEnvironment': self.target_environment,
+        }
