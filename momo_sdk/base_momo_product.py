@@ -22,7 +22,7 @@ class BaseProduct:
     paymentRequests, remittances and disbursements
     """
 
-    def __init__(self, subscription_key, api_key, apiuser_id,
+    def __init__(self, subscription_key='', api_key='', apiuser_id='',
                  auth_base_url='https://ericssonbasicapi2.azure-api.net/collection',
                  auth_url='token/', target_environment='sandbox'):
         authorization_header = base64.b64encode(

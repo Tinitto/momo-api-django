@@ -1,11 +1,89 @@
 """
+API URL FORMAT: https://ericssonbasicapi2.azure-api.net/{transaction in singular}/v1_0/{resourceUrl}/
 This module is for all transaction types of Porduct of the MTN MOMO Open API
-It is ported by Martin Ahindura from the mtn-pay-js Typescript package 
+It is ported by Martin Ahindura from the mtn-pay-js Typescript package
 https://github.com/sopherapps/mtn-pay-js/blob/master/src/transaction/index.ts
 """
+import uuid
+from .base_momo_product import BaseProduct
+from .utils.repository import RemoteResource
+
+RESOURCE_URL_MAP = {
+    'collection': 'requesttopay',
+    'disbursement': 'transfer',
+    'remittance': 'transfer',
+}
+
+TRANSACTION_RECEIPIENT_TYPES_MAP = {
+    'collection': 'payer',
+    'disbursement': 'payee',
+    'remittance': 'payee',
+}
+
+# TRANSACTION_TYPES = {
+#   'collection': 'collection',
+#   'disbursement': 'disbursement',
+#   'remittance': 'remittance',
+# }
+
+
+class MomoTranscation(BaseProduct):
+    """
+    Class for all transactions including remittances, disbursements
+    and collections
+    """
+
+    def __init__(self, transaction_type='collection', config):
+        auth_base_url = config.get(
+                   'auth_base_url', 'https://ericssonbasicapi2.azure-api.net/{}'.format(transaction_type))
+        super(MomoTranscation, self).__init__(
+            **config, auth_base_url=auth_base_url)
+
+        self.reference_id = str(uuid.uuid4())
+        self.status = {
+            code: '',
+            reason: '',
+            text: 'UNINITIALIZED',
+        }
+        self.receipient_type = None
+        self.transaction_type = None
+        self.timeout = 35000
+        # poll after 30 seconds by default
+        self.interval = 30000
+        self.transaction_resource = None
+        self.request_body = None
+        self.__details = None
+
+    // the safer receipient default is yourself!!!
+    this.receipientType =
+      config.receipientType | | transactionReceipientTypesMap[transactionType] | | ReceipientTypes.PAYER;
+    this.transactionType = transactionType;
+    const resourceUrl = config.resourceUrl | | resourceUrlsMap[transactionType] | | resourceUrlsMap.collection;
+
+    this.requestBody = {
+      amount: config.amount.toString(),
+      currency: config.currency | | 'UGX',
+      externalId: config.externalId | | uuidv4(),
+      payeeNote: config.payeeNote | | '',
+      payerMessage: config.payerMessage | | '',
+    };
+    if (this.receipientType === ReceipientTypes.PAYEE) {
+      this.requestBody.payee = config.receipient;} else {
+      this.requestBody.payer = config.receipient;}
+
+    this.timeout = config.timeout | | this.timeout;
+    this.interval = config.interval | | this.interval;
+    // this.interval should never be below 30 seconds
+    this.interval = Math.max(this.interval, 30000);
+
+    const baseURL = config.baseURL | | `https: // ericssonbasicapi2.azure-api.net /${transactionType}/v1_0`;
+    this.transactionResource = getResources(
+        [resourceUrl], baseURL, this.commonHeaders)[resourceUrl];
+  }
+
 
 """
-/// https://ericssonbasicapi2.azure-api.net/{transaction in singular}/v1_0/{resourceUrl}/
+/// 
 
 import { AxiosResponse } from 'axios';
 import { generate as uuidv4 } from 'uuidjs';
@@ -137,41 +215,7 @@ export default class Transaction extends BaseProduct {
   private requestBody: ITransactionBody;
   private details: ITransactionDetails | undefined;
 
-  constructor(transactionType: string = TransactionTypes.COLLECTION, config: ITransactionConfig) {
-    super({
-      ...config,
-      authBaseURL: config.authBaseURL || `https://ericssonbasicapi2.azure-api.net/${transactionType}`,
-    });
-
-    this.referenceId = uuidv4();
-    // the safer receipient default is yourself!!!
-    this.receipientType =
-      config.receipientType || transactionReceipientTypesMap[transactionType] || ReceipientTypes.PAYER;
-    this.transactionType = transactionType;
-    const resourceUrl = config.resourceUrl || resourceUrlsMap[transactionType] || resourceUrlsMap.collection;
-
-    this.requestBody = {
-      amount: config.amount.toString(),
-      currency: config.currency || 'UGX',
-      externalId: config.externalId || uuidv4(),
-      payeeNote: config.payeeNote || '',
-      payerMessage: config.payerMessage || '',
-    };
-    if (this.receipientType === ReceipientTypes.PAYEE) {
-      this.requestBody.payee = config.receipient;
-    } else {
-      this.requestBody.payer = config.receipient;
-    }
-
-    this.timeout = config.timeout || this.timeout;
-    this.interval = config.interval || this.interval;
-    // this.interval should never be below 30 seconds
-    this.interval = Math.max(this.interval, 30000);
-
-    const baseURL = config.baseURL || `https://ericssonbasicapi2.azure-api.net/${transactionType}/v1_0`;
-    this.transactionResource = getResources([resourceUrl], baseURL, this.commonHeaders)[resourceUrl];
-  }
-
+  
   /**
    * makes a POST request to the resourceUrl ednpoint to create a transaction request
    */
