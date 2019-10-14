@@ -36,6 +36,8 @@ def request_for_payment(momo_request):
     """
     auth_response = authenticate_with_momo()
 
+    print('here\n\n\n\n')
+
     if auth_response:
         endpoint_url = '{}/collection/v1_0/requesttopay'.format(
             settings.MOMO_BASE_URL)

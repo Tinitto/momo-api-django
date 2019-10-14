@@ -2,7 +2,7 @@ import os
 from celery import Celery
 
 # set the default Django settings module for the 'celery' program
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'momo_main_app.settings.py')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'momo_main_app.settings')
 
 app = Celery('momo_main_app')
 

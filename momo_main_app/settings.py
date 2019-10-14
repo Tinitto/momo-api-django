@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'momo_requests'
 ]
 
 MIDDLEWARE = [
@@ -141,5 +142,5 @@ MOMO_API_KEY = os.environ.get('MOMO_API_KEY', '')
 MOMO_SUBSCRIPTION_KEY_FOR_COLLECTIONS = os.environ.get(
     'MOMO_SUBSCRIPTION_KEY_FOR_COLLECTIONS', '')
 MOMO_TARGET_ENVIRONMENT = os.environ.get('MOMO_TARGET_ENVIRONMENT', 'sandbox')
-MOMO_POLLING_INTERVAL = max(os.environ.get(
-    'MOMO_POLLING_INTERVAL', 30000), 30000)  # default to 30 seconds and never below
+MOMO_POLLING_INTERVAL = max(int(os.environ.get(
+    'MOMO_POLLING_INTERVAL', 30000)), 30000)  # default to 30 seconds and never below
