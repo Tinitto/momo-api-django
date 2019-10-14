@@ -3,77 +3,58 @@ This is a module that utilities to do with the account endpoint of the MOMO Open
 It has been ported by Martin Ahindura from the mtn-pay-js Typescript package
 https://github.com/sopherapps/mtn-pay-js/blob/master/src/account/index.ts
 """
+from .base_momo_product import BaseProduct
+from .utils.repository import RemoteResource
+from datetime import datetime
 
-"""
-/// https://ericssonbasicapi2.azure-api.net/${accountType}/v1_0/account/balance
-
-import { BaseProduct } from '../core';
-import getResources, { IResource } from '../utils/repository';
-
-export interface IAccountConfig {
-  subscriptionKey: string;
-  targetEnvironment?: string;
-  apiuserId: string;
-  apiKey: string;
-  authBaseURL?: string;
-  baseURL?: string;
+ACCOUNT_TYPES = {
+    'COLLECTION': 'collection',
+    'DISBURSEMENT': 'disbursement',
+    'REMITTANCE': 'remittance',
 }
 
-export interface IAccountDetails {
-  balance: number;
-  currency: string;
-}
 
-export enum AccountTypes {
-  COLLECTION = 'collection',
-  DISBURSEMENT = 'disbursement',
-  REMITTANCE = 'remittance',
-}
+class MomoAccount(BaseProduct):
+    """
+    Details about a Momo account
+    """
 
-/**
- * @class Account()
- * Details about the account
- * @property {Date} lastModified
- * @public @method getDetails()
- */
-export default class Account extends BaseProduct {
-  public lastModified: Date | undefined;
-  private details: IAccountDetails | undefined;
-  private accountResource: IResource;
+    def __init__(self, account_type, config):
+        self.last_modified = None
+        self.__details = None
+        auth_base_url = config.get('auth_base_url',
+                                   'https://ericssonbasicapi2.azure-api.net/{}'.format(
+                                       account_type))
 
-  constructor(accountType: string, config: IAccountConfig) {
-    super({
-      ...config,
-      authBaseURL: config.authBaseURL || `https://ericssonbasicapi2.azure-api.net/${accountType}`,
-    });
-    const baseURL = config.baseURL || `https://ericssonbasicapi2.azure-api.net/${accountType}/v1_0`;
+        super(MomoAccount, self).__init__(
+            **config, auth_base_url=auth_base_url)
 
-    const accountUrl = 'account';
-    this.accountResource = getResources([accountUrl], baseURL, this.commonHeaders)[accountUrl];
-  }
+        api_base_url = config.get('api_base_url',
+                                  "https://ericssonbasicapi2.azure-api.net/{}/v1_0".format(
+                                      account_type))
 
-  public async getDetails(forceRefresh = false) {
-    await this.authenticate();
-    if (forceRefresh || !this.lastModified) {
-      const headers: any = {
-        Authorization: `Bearer ${this.apiToken ? this.apiToken.accessToken : ''}`,
-      };
-      try {
-        const response = await this.accountResource.getOne('balance', headers);
-        if (response.status === 200) {
-          this.details = {
-            balance: parseFloat(response.data.availableBalance),
-            currency: response.data.currency,
-          };
-          this.lastModified = new Date();
-        } else {
-          throw new Error(response.data.message || 'Error making request');
-        }
-      } catch (error) {
-        throw error;
-      }
-    }
-    return this.details;
-  }
-}
-"""
+        self.__account_resource = RemoteResource(
+            'account', api_base_url, common_headers=self.common_headers)
+
+    def get_details(self, force_refresh=False):
+        """Returns the details in the account e.g. balance, currency"""
+        self.authenticate()
+
+        if force_refresh and self.last_modified is None:
+            headers = {'Authorization': "Bearer {}".format(
+                self.api_token['access_token'])}
+            response = self.__account_resource.get_one(
+                'balance', headers=headers)
+
+            json_response = response.json()
+            if response.status_code == 200:
+                self.__details = {
+                    'balance': float(json_response['availableBalance']),
+                    'currency': json_response['currency']
+                }
+                self.last_modified = datetime.now()
+            else:
+                message = json_response.get('message', 'Error making request')
+                raise Exception(message)
+
+        return self.__details
