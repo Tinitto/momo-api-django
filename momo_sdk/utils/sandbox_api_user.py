@@ -12,7 +12,7 @@ class SandboxApiUser:
     """A class for the Sandbox api user credentials to be used during testing"""
 
     def __init__(self, subscription_key, api_base_url='https://ericssonbasicapi2.azure-api.net/v1_0', provider_callback_host='https://example.com',):
-        self.reference_id = uuid.uuid4()
+        self.reference_id = str(uuid.uuid4())
         self.provider_callback_host = provider_callback_host
         self.api_key = ''
         self.provider_callback_host = ''
