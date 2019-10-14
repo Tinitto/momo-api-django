@@ -22,8 +22,7 @@ class BaseProduct:
     paymentRequests, remittances and disbursements
     """
 
-    def __init__(self,
-                 subscription_key, api_key, apiuser_id,
+    def __init__(self, subscription_key, api_key, apiuser_id,
                  auth_base_url='https://ericssonbasicapi2.azure-api.net/collection',
                  auth_url='token/', target_environment='sandbox'):
         authorization_header = base64.b64encode(
@@ -42,9 +41,9 @@ class BaseProduct:
         """
         Authenticates with remote api if the apiToken is expired or non-existent
         """
-        if (self.should_authenticate()):
+        if self.should_authenticate():
             response = self.auth_resource.create({})
-            if (response.status_code in [200, 201, 202]):
+            if response.status_code in [200, 201, 202]:
                 self.api_token = response.json()
                 self.api_token['created_at'] = datetime.now()
 
@@ -52,7 +51,7 @@ class BaseProduct:
         """
         Checks whether the apiToken has expired or not; or whether it is exists or not
         """
-        if (self.api_token is None):
+        if self.api_token is None:
             return True
         token_age_in_seconds = seconds_since(self.api_token.created_at)
         return token_age_in_seconds >= self.api_token.expires_in

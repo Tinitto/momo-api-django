@@ -42,23 +42,23 @@ class SandboxApiUser:
     def __get_remote_api_key(self):
         """Creates the API key"""
         response = self.api_key_resource.create({})
-        if(response.status_code == 201):
+        if response.status_code == 201:
             self.api_key = response.json()['apiKey']
 
     def __get_remote_user_details(self):
         """Returns the user's details"""
         response = self.api_user_resource.get_one(self.reference_id)
-        if (response.status == 200):
+        if response.status == 200:
             data = response.json()
             self.target_environment = data['targetEnvironment']
             self.provider_callback_host = data['providerCallbackHost']
 
     def get_user(self):
         """returns the users details in a MOMO open api format"""
-        if (self.api_key is None):
+        if self.api_key is None:
             self.__get_remote_api_key()
 
-        if (self.target_environment is None):
+        if self.target_environment is None:
             self.__get_remote_user_details()
 
         return {
