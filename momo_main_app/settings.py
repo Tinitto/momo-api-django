@@ -105,7 +105,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Africa/Kampala'
 
 USE_I18N = True
 
@@ -125,3 +125,21 @@ CELERY_RESULT_BACKEND = 'redis://localhost:6379'
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TASK_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Africa/Kampala'
+CELERY_BEAT_SCHEDULE = {
+    'update-status-of-pending-every-minute': {
+        'task': 'momo_requests.tasks.update_status_for_all_pending_payments',
+        'schedule': 60,
+        'args': ()
+    }
+}
+
+MOMO_BASE_URL = os.environ.get(
+    'MOMO_BASE_URL', 'https://sandbox.momodeveloper.mtn.com')
+MOMO_API_USER_ID = os.environ.get('MOMO_API_USER_ID', '')
+MOMO_API_KEY = os.environ.get('MOMO_API_KEY', '')
+MOMO_SUBSCRIPTION_KEY_FOR_COLLECTIONS = os.environ.get(
+    'MOMO_SUBSCRIPTION_KEY_FOR_COLLECTIONS', '')
+MOMO_TARGET_ENVIRONMENT = os.environ.get('MOMO_TARGET_ENVIRONMENT', 'sandbox')
+MOMO_POLLING_INTERVAL = max(os.environ.get(
+    'MOMO_POLLING_INTERVAL', 30000), 30000)  # default to 30 seconds and never below
