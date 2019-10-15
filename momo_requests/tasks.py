@@ -20,11 +20,10 @@ def authenticate_with_momo():
     auth_header = base64.b64encode('{api_user_id}:{api_key}'.format(
         api_user_id=settings.MOMO_API_USER_ID, api_key=settings.MOMO_API_KEY).encode('utf-8'))
     headers = {
-        'Authorization': 'Basic {}'.format(auth_header),
+        'Authorization': 'Basic {}'.format(auth_header.decode('utf-8')),
         'Ocp-Apim-Subscription-Key': settings.MOMO_SUBSCRIPTION_KEY_FOR_COLLECTIONS
     }
     response = requests.post(endpoint_url, headers=headers)
-    print(response)
     if(response.ok):
         return response.json()
 
