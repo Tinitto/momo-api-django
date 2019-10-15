@@ -75,8 +75,8 @@ def request_for_payment(momo_request_id):
 
 def __update_payment_status(momo_request):
     """
-    Polls the MOMO api to determine the status of 
-    the request of given id
+    Calls the MOMO api to determine the status of 
+    the MomoRequest
     """
     # poll only payments that have 'PENDING' status
     if momo_request.status != 'PENDING':
@@ -93,17 +93,22 @@ def __update_payment_status(momo_request):
             'Ocp-Apim-Subscription-Key': settings.MOMO_SUBSCRIPTION_KEY_FOR_COLLECTIONS
         }
 
-        poll_response = requests.get(endpoint_url, headers=headers)
-        parsed_response = poll_response.json()
+        api_response = requests.get(endpoint_url, headers=headers)
+        parsed_response = api_response.json()
         status = parsed_response.get('status')
 
-        if(poll_response.ok and status != 'PENDING'):
+        if(api_response.status_code == 404):
+            momo_request.status = parsed_response.get('code')
+            momo_request.reason = parsed_response.get('message')
+
+        elif(api_response.ok and status != 'PENDING'):
             momo_request.status = status
             momo_request.reason = parsed_response.get(
                 'reason', {}).get('message', '')
             momo_request.financial_transaction_id = parsed_response.get(
                 'financialTransactionId')
-            momo_request.save()
+
+        momo_request.save()
 
     else:
         raise Exception('Failed to authenticate with MOMO API')
@@ -116,6 +121,6 @@ def update_status_for_all_pending_payments():
     status and loops through each updating the status
     """
     # pylint: disable=no-member
-    all_pending_payment_requests = MomoRequest.objects.filter(status='PENDING')
-    for request in all_pending_payment_requests:
-        __update_payment_status(request)
+    all_pending_momo_requests = MomoRequest.objects.filter(status='PENDING')
+    for momo_request in all_pending_momo_requests:
+        __update_payment_status(momo_request)
