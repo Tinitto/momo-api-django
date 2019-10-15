@@ -24,21 +24,23 @@ def authenticate_with_momo():
         'Ocp-Apim-Subscription-Key': settings.MOMO_SUBSCRIPTION_KEY_FOR_COLLECTIONS
     }
     response = requests.post(endpoint_url, headers=headers)
+    print(response)
     if(response.ok):
         return response.json()
 
 
 @shared_task
-def request_for_payment(momo_request):
+def request_for_payment(momo_request_id):
     """
     Makes a remote request to the MOMO API
     to request for payment from a payer
     """
     auth_response = authenticate_with_momo()
 
-    print('here\n\n\n\n')
-
     if auth_response:
+        # get the MomoRequest
+        # pylint: disable=no-member
+        momo_request = MomoRequest.objects.get(id=momo_request_id)
         endpoint_url = '{}/collection/v1_0/requesttopay'.format(
             settings.MOMO_BASE_URL)
 
@@ -72,8 +74,7 @@ def request_for_payment(momo_request):
         raise Exception('Failed to authenticate with MOMO API')
 
 
-@shared_task
-def update_payment_status(momo_request):
+def __update_payment_status(momo_request):
     """
     Polls the MOMO api to determine the status of 
     the request of given id
@@ -118,4 +119,4 @@ def update_status_for_all_pending_payments():
     # pylint: disable=no-member
     all_pending_payment_requests = MomoRequest.objects.filter(status='PENDING')
     for request in all_pending_payment_requests:
-        update_payment_status(request)
+        __update_payment_status(request)

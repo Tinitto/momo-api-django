@@ -9,5 +9,4 @@ from momo_requests.tasks import request_for_payment
 def make_momo_collection_request(sender, instance, created, **kwargs):
     if created:
         # Run only on creation of the MomoRequest
-        print('here')
-        request_for_payment.delay(instance)
+        request_for_payment.delay(instance.id)
