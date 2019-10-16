@@ -35,7 +35,12 @@ A small django app for using the MOMO api to effect collections and reimbursemen
 
 ## How to test (code snippets shown are for ubuntu 16.04)
 
-- Ensure all the dependencies are installed
+- Ensure all the dependencies are installed and the redis-server is running.
+
+  ```bash
+  /usr/local/bin/redis-server --daemonize yes
+  ```
+
 - Clone the repo
 
   ```bash
@@ -60,3 +65,84 @@ A small django app for using the MOMO api to effect collections and reimbursemen
   python manage.py runserver
   ```
 
+## How to run locally
+
+- Ensure all the dependencies are installed and the redis-server is running.
+
+  ```bash
+  /usr/local/bin/redis-server --daemonize yes
+  ```
+
+- Clone the repo
+
+  ```bash
+  git clone https://github.com/Tinitto/momo-api-django.git
+  ```
+
+- Enter the `momo-api-django` directory and create a virtual environment and activate it
+
+  ```bash
+  cd momo-api-django && virtualenv -p /usr/bin/python3 env && source env/bin/activate
+  ```
+
+- Install the python dependencies
+
+  ```bash
+  pip install -r requirements.txt
+  ```
+
+- Open a separate terminal with the same folder active
+
+  ```bash
+  gnome-terminal
+  ```
+
+- In the new terminal (let's call it __Celery Worker terminal__), activate the virtual enviroment and then start the celery worker
+
+  ```bash
+  source env/bin/activate && celery -A momo_main_app worker -l info
+  ```
+
+- Open another terminal with the same folder active again
+
+  ```bash
+  gnome-terminal
+  ```
+
+- In the new terminal (let's call it __Celery Beat terminal__), activate the virtual enviroment and then start the celery beat
+
+  ```bash
+  source env/bin/activate && celery -A momo_main_app beat -l info
+  ```
+
+- Back to your very first terminal (the one which is not running anything to do with celery), open your django shell
+
+  ```bash
+  python manage.py shell
+  ```
+
+- An example to create a new MomoRequest of amount 500 euros for phonenumber '46733123450' in the shell is:
+
+  ```python
+  from momo_requests.models import MomoRequest
+  
+  new_momo_request = MomoRequest.objects.create(amount=500, currency='EUR', payer_party_id='46733123450')
+  ```
+
+- If you check the __Celery Worker terminal__, you should see a new entry with words along the lines of
+
+  ```bash
+  ...Received task: momo_requests.tasks.request_for_payment...
+  ```
+
+- If you check the __Celery Beat terminal__, you should see new entries every minute with words along the lines of
+
+  ```bash
+  ...Scheduler: Sending due task update-status-of-pending-every-minute (momo_requests.tasks.update_status_for_all_pending_payments)
+  ```
+
+  Corresponding to these new entries on __Celery Beat terminal__, you will be able to see more entries added successively on the __Celery Worker terminal__ with words along the lines of
+
+    ```bash
+    ...Received task: momo_requests.tasks.update_status_for_all_pending_payments...
+    ```
