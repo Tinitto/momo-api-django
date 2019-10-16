@@ -6,6 +6,14 @@ from django.conf import settings
 from momo_requests.models import MomoRequest
 
 
+def create_basic_auth_header(api_user_id='', api_key=''):
+    """Creates a Basic Auth header for the MOMO Open API"""
+    base64_encoded_header = base64.b64encode(
+        '{api_user_id}:{api_key}'.format(api_user_id=api_user_id, api_key=api_key
+                                         ).encode('utf-8'))
+    return 'Basic {}'.format(base64_encoded_header.decode('utf-8'))
+
+
 @shared_task
 def authenticate_with_momo():
     """
@@ -17,10 +25,10 @@ def authenticate_with_momo():
     }
     """
     endpoint_url = "{}/collection/token/".format(settings.MOMO_BASE_URL)
-    auth_header = base64.b64encode('{api_user_id}:{api_key}'.format(
-        api_user_id=settings.MOMO_API_USER_ID, api_key=settings.MOMO_API_KEY).encode('utf-8'))
+    basic_auth_header = create_basic_auth_header(
+        api_user_id=settings.MOMO_API_USER_ID, api_key=settings.MOMO_API_KEY)
     headers = {
-        'Authorization': 'Basic {}'.format(auth_header.decode('utf-8')),
+        'Authorization': basic_auth_header,
         'Ocp-Apim-Subscription-Key': settings.MOMO_SUBSCRIPTION_KEY_FOR_COLLECTIONS
     }
     response = requests.post(endpoint_url, headers=headers)
@@ -73,7 +81,7 @@ def request_for_payment(momo_request_id):
         raise Exception('Failed to authenticate with MOMO API')
 
 
-def __update_payment_status(momo_request):
+def update_payment_status(momo_request):
     """
     Calls the MOMO api to determine the status of 
     the MomoRequest
@@ -100,6 +108,7 @@ def __update_payment_status(momo_request):
         if(api_response.status_code == 404):
             momo_request.status = parsed_response.get('code')
             momo_request.reason = parsed_response.get('message')
+            momo_request.save()
 
         elif(api_response.ok and status != 'PENDING'):
             momo_request.status = status
@@ -107,8 +116,7 @@ def __update_payment_status(momo_request):
                 'reason', {}).get('message', '')
             momo_request.financial_transaction_id = parsed_response.get(
                 'financialTransactionId')
-
-        momo_request.save()
+            momo_request.save()
 
     else:
         raise Exception('Failed to authenticate with MOMO API')
@@ -123,4 +131,4 @@ def update_status_for_all_pending_payments():
     # pylint: disable=no-member
     all_pending_momo_requests = MomoRequest.objects.filter(status='PENDING')
     for momo_request in all_pending_momo_requests:
-        __update_payment_status(momo_request)
+        update_payment_status(momo_request)
