@@ -59,6 +59,12 @@ A small django app for using the MOMO api to effect collections and reimbursemen
   pip install -r requirements.txt
   ```
 
+- Copy the `.env.example` file to `.env` and modify the secrets in there e.g. API Key
+
+  ```bash
+  cp .env.example .env
+  ```
+
 - Run the tests
 
   ```bash
@@ -89,6 +95,12 @@ A small django app for using the MOMO api to effect collections and reimbursemen
 
   ```bash
   pip install -r requirements.txt
+  ```
+
+- Copy the `.env.example` file to `.env` and modify the secrets in there e.g. API Key
+
+  ```bash
+  cp .env.example .env
   ```
 
 - Open a separate terminal with the same folder active
